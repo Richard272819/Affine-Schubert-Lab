@@ -1,0 +1,129 @@
+from itertools import combinations
+
+
+# Affine A_2: simple reflections s_0, s_1, s_2
+N = 3
+
+
+def simple(i):
+    w = [1, 2, 3]
+    i %= N
+
+    if i == 0:
+        w[0], w[2] = 0, 4
+    else:
+        w[i - 1], w[i] = w[i], w[i - 1]
+
+    return tuple(w)
+
+
+S = [simple(i) for i in range(N)]
+
+
+def value(w, i):
+    j = (i - 1) % N + 1
+    return w[j - 1] + ((i - j) // N) * N
+
+
+def multiply(a, b):
+    return tuple(value(a, value(b, i))
+                 for i in range(1, N + 1))
+
+
+def length(w):
+    total = 0
+
+    for i in range(1, N + 1):
+        for j in range(i + 1, N + 1):
+            total += abs((w[j - 1] - w[i - 1]) // N)
+
+    return total
+
+
+IDENTITY = (1, 2, 3)
+
+
+def product(word):
+    w = IDENTITY
+
+    for i in word:
+        w = multiply(w, S[i])
+
+    return w
+
+
+# ---------------------------------------------------------------
+# Choose one Schubert variety.
+#
+# w = s_0 s_1 s_2 s_1 s_0
+#
+# This word is reduced in affine A_2.
+# ---------------------------------------------------------------
+
+WORD = (0, 1, 2, 1, 0)
+W = product(WORD)
+
+
+# Every subword of a reduced word represents an element
+# below W in Bruhat order.
+elements = set()
+
+for r in range(len(WORD) + 1):
+    for positions in combinations(range(len(WORD)), r):
+        subword = [WORD[i] for i in positions]
+        elements.add(product(subword))
+
+
+# Count Schubert cells by dimension.
+counts = {}
+
+for u in elements:
+    k = length(u)
+    counts[k] = counts.get(k, 0) + 1
+
+
+# ---------------------------------------------------------------
+# Output
+# ---------------------------------------------------------------
+
+print("=" * 60)
+print("AFFINE SCHUBERT POINCARE POLYNOMIAL")
+print("=" * 60)
+
+print()
+print("Affine type:      A~_2")
+print("Schubert element:", W)
+print("Reduced word:     ", " ".join(f"s_{i}" for i in WORD))
+print("Dimension:         ", length(W))
+
+print()
+print("Schubert cells by dimension:")
+print()
+
+for k in sorted(counts):
+    print(f"  dimension {k}: {counts[k]} cell(s)")
+
+
+# Build P_X(q)
+terms = []
+
+for k in sorted(counts):
+    c = counts[k]
+
+    if c == 1:
+        term = "1" if k == 0 else f"q^{k}"
+    else:
+        term = f"{c}q^{k}"
+
+    terms.append(term)
+
+
+print()
+print("Poincare polynomial:")
+print()
+print("P_X(q) =", " + ".join(terms))
+
+print()
+print("=" * 60)
+print("BRUHAT INTERVAL SIZE:", len(elements))
+print("=" * 60)
